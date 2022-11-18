@@ -2,9 +2,11 @@
 Servo servoX;
 Servo servoY;
 
+
 bool setup_pos = true;
 int p_y ;
 int p_x ;
+int pos = 0;
 /*const int led=4;// Declaration Pin 3 for LED*/
 /*const int button=3;// Declaration Pin 3 for button
 int stateb=0;// Initialisation the state of the button */
@@ -34,23 +36,19 @@ void setup() {
 }
 
 void loop() {
- /*stateb=digitalRead(button);
- if(stateb==LOW)// if button ON 
- { 
- digitalWrite(led,LOW); */
+
  if(Serial.available()){ //checks if any data is in the serial buffer
     int value2;
     input = Serial.read(); //reads the data into a variable
     Serial.println(input);
     delay(15);
-    
-    switch (input)
-    {
+
+    switch (input){
     case 'd': value2 = Serial.parseInt();
         Serial.println(value2);
         Serial.println("going down ...");//down
         p_y = servoY.read();
-        if (p_y >= 0){
+        if (p_y >= 30){
            p_y -= value2; 
            servoY.write(p_y);
            delay(10);} 
@@ -89,20 +87,20 @@ void loop() {
 
       // to find the ball when its out of sight
       case 'D':
-      //if(input == 'D')
         Serial.println("finding ball down ...");//down
         p_y = servoY.read();
-        if (p_y <= 127){
+        if (p_y >=30){
            p_y -= 1;               
            servoY.write(p_y);
            delay(10);
         } 
-        break;   
+        break;  
+      
          
       case 'U':
           Serial.println("finding ball up ..."); //up
           p_y = servoY.read();
-          if (p_y >= 0){
+          if (p_y <=103.5){
              p_y += 1;               
              servoY.write(p_y); 
              delay(10);}
@@ -111,7 +109,7 @@ void loop() {
       case 'L':
           Serial.println("finding ball on the left...");
           p_x = servoX.read();
-          if (p_x <= 200){
+          if (p_x >= 0){
             p_x += 1;               
             servoX.write(p_x); 
             delay(10);}
@@ -120,7 +118,7 @@ void loop() {
       case 'R':
          Serial.println("finding ball on the right...");
          p_x = servoX.read();
-         if (p_x >= 0){
+         if (p_x <= 200){
             p_x -= 1;               
             servoX.write(p_x); 
             delay(10);}
