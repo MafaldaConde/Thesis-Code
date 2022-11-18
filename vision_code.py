@@ -17,13 +17,13 @@ ard.baudrate = 9600
 time.sleep(3)
 ard.open()
 # construct the argument parse and parse the arguments
-#ap = argparse.ArgumentParser()
-# ap.add_argument("-v", "--video",help="path to the (optional) video file")
-#ap.add_argument("-b", "--buffer", type=int, default=50, help="max buffer size")
-#args = vars(ap.parse_args())
-#font = cv2.FONT_HERSHEY_SIMPLEX
+ap = argparse.ArgumentParser()
+ap.add_argument("-v", "--video",help="path to the (optional) video file")
+ap.add_argument("-b", "--buffer", type=int, default=50, help="max buffer size")
+args = vars(ap.parse_args())
+font = cv2.FONT_HERSHEY_SIMPLEX
 
-#pts = deque(maxlen=args["buffer"])
+pts = deque(maxlen=args["buffer"])
 
 
 def mapObjectPosition(x, y):
@@ -34,7 +34,7 @@ alpha_x = 0
 alpha_y = 0
 
 def servomotor(cx, cy):  # Arduino function
-    if cx > 340:
+    if cx > 340: #340
         if alpha_x > 0:
             if alpha_x > max_v:
                 r = 'r' + str(max_v)
@@ -55,7 +55,7 @@ def servomotor(cx, cy):  # Arduino function
             print('l')
             time.sleep(0.01)
 
-    elif cx < 300:
+    elif cx < 300: #300
         if alpha_x > 0:
             if alpha_x > max_v:
                 r = 'r' + str(max_v)
@@ -78,7 +78,7 @@ def servomotor(cx, cy):  # Arduino function
         ard.write('S'.encode())
         print('S')
         time.sleep(0.01)
-    if cy > 260:
+    if cy > 260: #260
         if alpha_y > 0:
             if alpha_y > max_v:
                 d = 'd' + str(max_v)
@@ -97,7 +97,7 @@ def servomotor(cx, cy):  # Arduino function
                 ard.write(str(u).encode())
             print('u')
             time.sleep(0.01)
-    elif cy < 220:
+    elif cy < 220: #220
         if alpha_y > 0:
             if alpha_y > max_v:
                 d = 'd' + str(max_v)
@@ -173,8 +173,10 @@ time.sleep(5.0)
 servoPosition = 100
 servoPosition1 = 63.5
 servoOrientation = 0
+erro  = []
 errox = []
 erroy = []
+velocidade=[]
 t = []
 t_timestep=[]
 t_total=0
@@ -205,8 +207,8 @@ while True:
     blurred = cv2.GaussianBlur(color_image, (11, 11), 0)
     hsv = cv2.cvtColor(color_image, cv2.COLOR_BGR2HSV)
 
-    lower_blue = np.array([70,155,0])
-    upper_blue = np.array([112,255,255])  # [255, 255, 121]
+    lower_blue = np.array([69,159,0])
+    upper_blue = np.array([118,255,255])  # 'hmin': 69, 'smin': 159, 'vmin': 0, 'hmax': 118, 'smax': 255, 'vmax': 255
 
     mask = cv2.inRange(hsv, lower_blue, upper_blue)
     mask = cv2.erode(mask, None, iterations=2)
@@ -259,6 +261,8 @@ while True:
             # compute the error between the center of frame and the center of the ball
             erro_x = (cx - cx_frame)
             erro_y = (cy - cy_frame)
+            Erro= math.sqrt(erro_x**2 + erro_y**2)
+
             # print('d_centro_frame_x=' + str(erro_x))
             # print('d_centro_frame_y=' + str(erro_y))
 
@@ -271,14 +275,15 @@ while True:
             # print('tempo=' + str(tempo))
             velocidade_x = distx / tempo
             velocidade_y = disty / tempo
+            Velocidade= math.sqrt(velocidade_x**2 + velocidade_y**2)
             # print('velocidade_x=' + str(velocidade_x))
             # print('velocidade_y=' + str(velocidade_y))
 
             # compute number of degrees that servo has to move
-            K1 = 0.05  # 0.14
-            K2 = 0.007  # 0.1
-            K3 = 0.05  # 0.09
-            K4 = 0.007  # 0.09
+            K1 = 0.04
+            K2 = 0.007
+            K3 = 0.04
+            K4 = 0.007
             alpha_x = K1 * erro_x + K2 * velocidade_x
             alpha_x = int(alpha_x)
             print('alpha_x=' + str(alpha_x))
@@ -294,6 +299,8 @@ while True:
             # save the error and time in a list to plot it later
             errox.append(abs(erro_x))
             erroy.append(abs(erro_y))
+            erro.append(abs(Erro))
+            velocidade.append(Velocidade)
 
             t_total = t_total + t_timestep[iterator]
             iterator = iterator + 1 # to count the seconds in all time steps
@@ -306,39 +313,39 @@ while True:
             cx_i = cx
             cy_i = cy
 
-        else:  # This part aims to find the ball
-            ard.write('F'.encode())
-            time.sleep(1.00)
-            print("F")
-            if (servoOrientation == 0):
-                if (servoPosition >= 90):
+    else:  # This part aims to find the ball
+        #ard.write('F'.encode())
+        #time.sleep(1.00)
+        print("F")
+        if servoOrientation == 0:
+            if servoPosition >= 100:
                     servoOrientation = 1
-                else:
-                    servoOrientation = -1
-            if (servoOrientation == 1):
-                ard.write('L'.encode())
-                time.sleep(1.00)
-                servoPosition += 1
-                if (servoPosition > 180):
-                    servoPosition = 180
-                    ard.write('U'.encode())
-                    time.sleep(1.00)
-                    servoPosition1 += 1
-                    if (servoPosition1 > 107):
-                        servoPosition1 = 107
-                        servoOrientation = -1
             else:
-                ard.write('R'.encode())
-                time.sleep(1.00)
-                servoPosition -= 1
-                if (servoPosition < 20):
-                    servoPosition = 20
-                    ard.write('D'.encode())
-                    time.sleep(1.01)
-                    servoPosition1 -= 1
-                    if (servoPosition1 < 20):
-                        servoPosition = 20
-                        servoOrientation = 1
+                    servoOrientation = -1
+        if servoOrientation == 1:
+            ard.write('L'.encode())
+            time.sleep(0.01)
+            servoPosition += 1
+            if servoPosition > 190:
+                servoPosition = 190
+                ard.write('U'.encode())
+                time.sleep(0.01)
+                servoPosition1 += 1
+                if servoPosition1 > 107:
+                    servoPosition1 = 107
+                    servoOrientation = -1
+        else:
+            ard.write('R'.encode())
+            time.sleep(0.01)
+            servoPosition -= 1
+            if servoPosition < 10:
+                servoPosition = 10
+                ard.write('D'.encode())
+                time.sleep(0.01)
+                servoPosition1 -= 1
+                if servoPosition1 < 30:
+                    servoPosition = 30
+                    servoOrientation = 1
 
     # pts.appendleft(center)
     cv2.imshow("result", color_image)
@@ -357,6 +364,7 @@ cv2.destroyAllWindows()
 
 # plot the distance error to compare the influence of using different K's
 
+plt.figure(1)
 plt.plot(t, errox, label='Eixo do X')
 plt.plot(t, erroy, label='Eixo do Y')
 max_x = max(errox)
@@ -365,10 +373,35 @@ tmax_y = t[np.argmax(erroy)]
 tmax_x = t[np.argmax(errox)]
 plt.plot(tmax_x, max_x, 'r*', label= 'máximo em x = '+str(max_x))
 plt.plot(tmax_y, max_y, 'r*', label='máximo em y = '+str (max_y))
+plt.legend()
+plt.ylabel('Distância em píxeis')
+plt.xlabel('t/s')
+plt.title('Distância do centro do objeto ao centro da imagem no eixo do X e do Y ')
 
 
+plt.figure(2)
+plt.plot(t, erro)
+media_er= np.nanmean(erro)
+media_err=int(media_er)
+plt.axhline(y=media_er, color='r', label="Média = "+str(media_err))
+#plt.plot(t, y, "-r", label="Média")
+plt.legend(loc="upper right")
 plt.ylabel('Distância em píxeis')
 plt.xlabel('t/s')
 plt.title('Variação da distância do centro do objeto ao centro da imagem ')
-plt.legend()
+
+
+plt.figure(3)
+plt.plot(t, velocidade)
+media_v= np.nanmean(velocidade)
+media_ve=int(media_v)
+plt.axhline(y=media_v, color='r', label="Média = "+str(media_ve))
+#plt.plot(t, y, "-r", label="Média")
+plt.legend(loc="upper right")
+plt.ylabel('Velocidade do objeto em pixéis/s')
+plt.xlabel('t/s')
+plt.title('Variação da velocidade do objeto')
+
+
+
 plt.show()
